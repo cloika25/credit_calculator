@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Calculator</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css"
+              integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    </head>
+<!--    https://fincult.info/services/credit-calculator/-->
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col mx-auto">
+                    <div class="card card-body text-center mt-5">
+                        <div class="row">
+                            <div class="col">
+                                <label for="credit_summ">
+                                    Сумма кредиа
+                                </label>
+                            </div>
+                            <div class="col">
+                                <input type="number" id="credit_summ">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label for="god_stavk">
+                                    Процентная ставка, % годовых
+                                </label>
+                            </div>
+                            <div class="col">
+                                <input id="god_stavk">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label for="stavk_type">
+                                    Порядок погашения
+                                </label>
+                            </div>
+                            <div class="col">
+                                <select id="stavk_type">
+                                    <option value="0">
+                                        Аннуитетный
+                                    </option>
+                                    <option value="1">
+                                        Дифференцированный
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label for="srok_credit">
+                                    Срок кредита в месяцах
+                                </label>
+                            </div>
+                            <div class="col">
+                                <input type="number" id="srok_credit">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn btn-primary" id="btn_submit">
+                                    Рассчитать
+                                </button>
+                            </div>
+                        </div>
+                        <div id="errors">
+                        </div>
+                        <div class="row" id="result">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.getElementById('btn_submit').addEventListener('click', function(e) {
+                calculateResults()
+            });
+            // document.getElementById('credit_summ').addEventListener('change', function(e) {
+            //     calculateResults()
+            // });
+            // document.getElementById('date_vid').addEventListener('change', function(e) {
+            //     calculateResults()
+            // });
+            // document.getElementById('srok_credit').addEventListener('change', function(e) {
+            //     calculateResults()
+            // });
+            // document.getElementById('god_stavk').addEventListener('change', function(e) {
+            //     calculateResults()
+            // });
+            // document.getElementById('stavk_type').addEventListener('change', function(e) {
+            //     calculateResults()
+            // });
+
+            function calculateResults() {
+                const summ = document.getElementById('credit_summ');
+                // const date_vidachi = document.getElementById('date_vid');
+                const months = document.getElementById('srok_credit');
+                const stavka = document.getElementById('god_stavk');
+                const type_pog = document.getElementById('stavk_type');
+
+                clearError();
+                clearResult();
+
+                if (summ.value === '' && !summ.value.isNaN){
+                    showError('Введите сумму кредита')
+                    return;
+                }
+
+                if (stavka.value === ''){
+                    showError('Введите процентную ставку')
+                    return;
+                }
+
+                if (months.value === ''){
+                    showError('Введите количество месяцев')
+                    return;
+                }
+                var all_summ = parseInt(summ.value)
+                var stavka_proc = parseFloat(stavka.value)
+                var months_col = parseInt(months.value)
+
+                if (type_pog.value == 0){
+                    addRowResult('Месяц выплаты','платеж','проценты','тело кредита','остаток')
+                    var result_sum;
+                    const r = stavka_proc/100/12;
+                    const stat_sum = (all_summ * ((r*Math.pow(1+r, months_col))/(Math.pow(1+r, months_col)-1))).toFixed(2);
+                    result_sum = stat_sum * months_col;
+                    var temp_sum = all_summ;
+                    for (let i = 0; i< months_col; i = i+1){
+                        let proc_vip = parseFloat((temp_sum * r).toFixed(2));
+                        let body_vip;
+                        if (stat_sum - proc_vip > temp_sum){
+                            body_vip = temp_sum
+                        }else{
+                            body_vip = parseFloat((stat_sum - proc_vip).toFixed(2));
+                        }
+                        temp_sum = parseFloat((temp_sum - body_vip).toFixed(2));
+                        addRowResult(i+1, stat_sum, proc_vip, body_vip, temp_sum);
+                    }
+                    addRowResult('Всего:',result_sum,'','','');
+                }else{
+                    addRowResult('Месяц выплаты','платеж','проценты','тело кредита','остаток')
+                    var result_sum = 0;
+                    const body_pl = parseFloat((all_summ / months_col).toFixed(2));
+                    const r = stavka_proc/100/12;
+                    var temp_sum = all_summ;
+                    for (let i = 0; i< months_col; i =i + 1){
+                        let procent_body = parseFloat((r * temp_sum).toFixed(2));
+                        let viplata = body_pl + procent_body;
+                        temp_sum -= body_pl;
+                        result_sum = result_sum + viplata;
+                        addRowResult(i+1, viplata, procent_body, body_pl, temp_sum );
+                    }
+                    addRowResult('Всего:',result_sum,'','','');
+                }
+
+            }
+            function addRowResult(a, b, c, d, e){
+                var block = document.getElementById('result');
+                var elem = document.createElement('div');
+                elem.className='row'
+                elem.innerHTML = "" +
+                    "<div class='col'>" + a +"</div>" +
+                    "<div class='col'>" + b +"</div>" +
+                    "<div class='col'>" + c +"</div>" +
+                    "<div class='col'>" + d +"</div>" +
+                    "<div class='col'>" + e +"</div>"
+                block.appendChild(elem)
+            }
+
+            function showError(error) {
+                var block = document.getElementById('errors');
+                var elem = document.createElement('div');
+                elem.className = 'row';
+                elem.innerText = error;
+                block.appendChild(elem);
+            }
+
+            function clearError() {
+                document.getElementById('errors').innerHTML = '';
+            }
+
+            function clearResult() {
+                document.getElementById('result').innerHTML = '';
+            }
+        </script>
+        <style>
+            .row{
+                margin-bottom: 15px;
+                width: 100%;
+            }
+        </style>
+    </body>
+</html>
