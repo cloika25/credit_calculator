@@ -29,6 +29,11 @@
                     <div class="card card-body text-center mt-5">
                         <div class="row">
                             <div class="col">
+                                Кредитный калькулятор
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
                                 <label for="credit_summ">
                                     Сумма кредита
                                 </label>
@@ -116,24 +121,39 @@
                         </div>
                         <div class="row">
                             <div class="col">
-                                <label for="srok_platezh"></label>
+                                <label for="srok_platezh">
+                                    Срок вклада в месяцах
+                                </label>
                             </div>
                             <div class="col">
                                 <input type="number" id="srok_platezh">
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col"></div>
                             <div class="col">
-                                <input type="proc_platezha">
+                                <label for="proc_platezha">
+                                    Процент вклада
+                                </label>
+                            </div>
+                            <div class="col">
+                                <input id="proc_platezha">
                             </div>
                         </div>
                         <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn btn-primary" id="platezh_clear_submit">
+                                    Очистить
+                                </button>
+                            </div>
                             <div class="col">
                                 <button type="button" class="btn btn-primary" id="platezh_submit">
                                     Рассчитать
                                 </button>
                             </div>
+                        </div>
+                        <div id="errors_plat">
+                        </div>
+                        <div class="row" id="result_plat">
                         </div>
                     </div>
                 </div>
@@ -143,32 +163,20 @@
             document.getElementById('btn_submit').addEventListener('click', function(e) {
                 calculateResults()
             });
-            document.getElementById('platezh_submit').addEventListener(('click', function (e){
+            document.getElementById('platezh_submit').addEventListener('click', function (e){
                 calculateVlozhenie()
-            }))
+            });
             document.getElementById('btn_clear_submit').addEventListener('click', function(e) {
                 clearResult()
                 clearError()
             });
+            document.getElementById('platezh_clear_submit').addEventListener('click', function(e) {
+                clearResultPlat()
+                clearErrorPlat()
+            });
 
-            // document.getElementById('credit_summ').addEventListener('change', function(e) {
-            //     calculateResults()
-            // });
-            // document.getElementById('date_vid').addEventListener('change', function(e) {
-            //     calculateResults()
-            // });
-            // document.getElementById('srok_credit').addEventListener('change', function(e) {
-            //     calculateResults()
-            // });
-            // document.getElementById('god_stavk').addEventListener('change', function(e) {
-            //     calculateResults()
-            // });
-            // document.getElementById('stavk_type').addEventListener('change', function(e) {
-            //     calculateResults()
-            // });
             function calculateResults() {
                 const summ = document.getElementById('credit_summ');
-                // const date_vidachi = document.getElementById('date_vid');
                 const months = document.getElementById('srok_credit');
                 const stavka = document.getElementById('god_stavk');
                 const type_pog = document.getElementById('stavk_type');
@@ -176,30 +184,29 @@
                 clearError();
                 clearResult();
 
-                if (summ.value === '' && !summ.value.isNaN){
+                if (summ.value === '' || summ.value.isNaN){
                     showError('Введите сумму кредита')
+                    return;
+                }
+                if (stavka.value === ''){
+                    showError('Введите процентную ставку')
+                    return;
+                }
+                if (months.value === '' || summ.value.isNaN){
+                    showError('Введите количество месяцев')
                     return;
                 }
 
                 stavka.value = stavka.value.replace(',', '.')
 
-                if (stavka.value === ''){
-                    showError('Введите процентную ставку')
-                    return;
-                }
-
-                if (months.value === ''){
-                    showError('Введите количество месяцев')
-                    return;
-                }
                 var all_summ = parseInt(summ.value)
                 var stavka_proc = parseFloat(stavka.value)
                 var months_col = parseInt(months.value)
+                var result_sum;
+                const r = stavka_proc/100/12;
+                addRowResult('Месяц выплаты','платеж','проценты','тело кредита','остаток')
 
                 if (type_pog.value == 0){
-                    addRowResult('Месяц выплаты','платеж','проценты','тело кредита','остаток')
-                    var result_sum;
-                    const r = stavka_proc/100/12;
                     const stat_sum = (all_summ * ((r*Math.pow(1+r, months_col))/(Math.pow(1+r, months_col)-1))).toFixed(2);
                     result_sum = parseFloat((stat_sum * months_col).toFixed(2));
                     var temp_sum = all_summ;
@@ -214,27 +221,62 @@
                         temp_sum = prepareNumb(parseFloat(temp_sum) - parseFloat(body_vip));
                         addRowResult(i+1, stat_sum, proc_vip, body_vip, temp_sum);
                     }
-                    addRowResult('Всего:',result_sum,'','Переплата',prepareNumb(parseFloat(result_sum) - parseFloat(all_summ)));
                 }else{
-                    addRowResult('Месяц выплаты','платеж','проценты','тело кредита','остаток')
-                    var result_sum = 0;
-                    const body_pl = prepareNumb(all_summ / months_col);
-                    const r = stavka_proc/100/12;
+                    var body_pl = prepareNumb(all_summ / months_col);
                     var temp_sum = all_summ;
                     for (let i = 0; i< months_col; i =i + 1){
                         let procent_body = prepareNumb(r * parseFloat(temp_sum));
                         let viplata = prepareNumb(parseFloat(body_pl) + parseFloat(procent_body));
                         temp_sum = prepareNumb(parseFloat(temp_sum) - parseFloat(body_pl));
                         result_sum = prepareNumb(parseFloat(result_sum) + parseFloat(viplata));
+                        if (stat_sum - proc_vip > temp_sum){
+                            body_pl = temp_sum
+                        }
                         addRowResult(i+1, viplata, procent_body, body_pl, temp_sum );
                     }
-                    addRowResult('Всего:',result_sum,'','Переплата',prepareNumb(parseFloat(result_sum)-parseFloat(all_summ)));
                 }
 
+                addRowResult('Всего:',result_sum,'','Переплата',prepareNumb(parseFloat(result_sum) - parseFloat(all_summ)));
             }
 
             function calculateVlozhenie(){
+                const summInput = document.getElementById('summ_platezha');
+                const srokInput = document.getElementById('srok_platezh');
+                const procentInput = document.getElementById('proc_platezha');
 
+                clearErrorPlat();
+                clearResultPlat();
+
+                if (summInput.value == '' || summInput.value.isNaN){
+                    showErrorVklad('Введите корректную сумму вклада')
+                    return;
+                }
+                if (srokInput.value == '' || srokInput.value.isNaN){
+                    showErrorVklad('Введите корректный срок вклада')
+                    return;
+                }
+                if (procentInput.value == ''){
+                    showErrorVklad('Введите процент вклада')
+                    return;
+                }
+
+                procentInput.value = procentInput.value.replace(',', '.')
+
+                var firstSumm = parseInt(summInput.value)
+                var countMonths = parseInt(srokInput.value)
+                var yearProcent = parseFloat(procentInput.value)
+                var r = yearProcent / 100/ 12
+
+                var temp_summ = firstSumm;
+                var summ_proc = 0;
+                // addRowResultVklad(1, prepareNumb(0), prepareNumb((temp_summ)))
+                for (let i = 0; i < countMonths; i= i+1) {
+                    let procent = temp_summ * r;
+                    summ_proc = summ_proc + procent;
+                    addRowResultVklad(i + 1, prepareNumb(procent), prepareNumb(temp_summ));
+                    temp_summ = procent + temp_summ;
+                }
+                addRowResultVklad('Итого', prepareNumb(summ_proc), prepareNumb(temp_summ))
             }
 
             function addRowResult(a, b, c, d, e){
@@ -250,8 +292,27 @@
                 block.appendChild(elem)
             }
 
+            function addRowResultVklad(a, b, c){
+                var block = document.getElementById('result_plat');
+                var elem = document.createElement('div');
+                elem.className='row'
+                elem.innerHTML = "" +
+                    "<div class='col'>" + a +"</div>" +
+                    "<div class='col'>" + b +"</div>" +
+                    "<div class='col'>" + c +"</div>"
+                block.appendChild(elem)
+            }
+
             function showError(error) {
                 var block = document.getElementById('errors');
+                var elem = document.createElement('div');
+                elem.className = 'row';
+                elem.innerText = error;
+                block.appendChild(elem);
+            }
+
+            function showErrorVklad(error) {
+                var block = document.getElementById('errors_plat');
                 var elem = document.createElement('div');
                 elem.className = 'row';
                 elem.innerText = error;
@@ -268,6 +329,14 @@
 
             function clearResult() {
                 document.getElementById('result').innerHTML = '';
+            }
+
+            function clearErrorPlat() {
+                document.getElementById('errors_plat').innerHTML = '';
+            }
+
+            function clearResultPlat() {
+                document.getElementById('result_plat').innerHTML = '';
             }
         </script>
         <style>
