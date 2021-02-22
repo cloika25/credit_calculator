@@ -76,6 +76,11 @@
                         </div>
                         <div class="row">
                             <div class="col">
+                                <button type="button" class="btn btn-primary" id="btn_clear_submit">
+                                    Очистить
+                                </button>
+                            </div>
+                            <div class="col">
                                 <button type="button" class="btn btn-primary" id="btn_submit">
                                     Рассчитать
                                 </button>
@@ -89,10 +94,63 @@
                 </div>
             </div>
         </div>
+
+        <div class="container">
+            <div class="row text-center">
+                <div class="col mx-auto">
+                    <div class="card card-body text-center mt-5">
+                        <div class="row">
+                            <div class="col">
+                                Депозитный калькулятор
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label for="summ_platezha">
+                                    Сумма вклада
+                                </label>
+                            </div>
+                            <div class="col">
+                                <input type="number"  id="summ_platezha">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <label for="srok_platezh"></label>
+                            </div>
+                            <div class="col">
+                                <input type="number" id="srok_platezh">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col"></div>
+                            <div class="col">
+                                <input type="proc_platezha">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn btn-primary" id="platezh_submit">
+                                    Рассчитать
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <script>
             document.getElementById('btn_submit').addEventListener('click', function(e) {
                 calculateResults()
             });
+            document.getElementById('platezh_submit').addEventListener(('click', function (e){
+                calculateVlozhenie()
+            }))
+            document.getElementById('btn_clear_submit').addEventListener('click', function(e) {
+                clearResult()
+                clearError()
+            });
+
             // document.getElementById('credit_summ').addEventListener('change', function(e) {
             //     calculateResults()
             // });
@@ -108,7 +166,6 @@
             // document.getElementById('stavk_type').addEventListener('change', function(e) {
             //     calculateResults()
             // });
-
             function calculateResults() {
                 const summ = document.getElementById('credit_summ');
                 // const date_vidachi = document.getElementById('date_vid');
@@ -123,6 +180,8 @@
                     showError('Введите сумму кредита')
                     return;
                 }
+
+                stavka.value = stavka.value.replace(',', '.')
 
                 if (stavka.value === ''){
                     showError('Введите процентную ставку')
@@ -142,37 +201,42 @@
                     var result_sum;
                     const r = stavka_proc/100/12;
                     const stat_sum = (all_summ * ((r*Math.pow(1+r, months_col))/(Math.pow(1+r, months_col)-1))).toFixed(2);
-                    result_sum = stat_sum * months_col;
+                    result_sum = parseFloat((stat_sum * months_col).toFixed(2));
                     var temp_sum = all_summ;
                     for (let i = 0; i< months_col; i = i+1){
-                        let proc_vip = parseFloat((temp_sum * r).toFixed(2));
+                        let proc_vip = prepareNumb((parseFloat(temp_sum) * r));
                         let body_vip;
                         if (stat_sum - proc_vip > temp_sum){
                             body_vip = temp_sum
                         }else{
-                            body_vip = parseFloat((stat_sum - proc_vip).toFixed(2));
+                            body_vip = prepareNumb(parseFloat(stat_sum) - parseFloat(proc_vip));
                         }
-                        temp_sum = parseFloat((temp_sum - body_vip).toFixed(2));
+                        temp_sum = prepareNumb(parseFloat(temp_sum) - parseFloat(body_vip));
                         addRowResult(i+1, stat_sum, proc_vip, body_vip, temp_sum);
                     }
-                    addRowResult('Всего:',result_sum,'','','');
+                    addRowResult('Всего:',result_sum,'','Переплата',prepareNumb(parseFloat(result_sum) - parseFloat(all_summ)));
                 }else{
                     addRowResult('Месяц выплаты','платеж','проценты','тело кредита','остаток')
                     var result_sum = 0;
-                    const body_pl = parseFloat((all_summ / months_col).toFixed(2));
+                    const body_pl = prepareNumb(all_summ / months_col);
                     const r = stavka_proc/100/12;
                     var temp_sum = all_summ;
                     for (let i = 0; i< months_col; i =i + 1){
-                        let procent_body = parseFloat((r * temp_sum).toFixed(2));
-                        let viplata = body_pl + procent_body;
-                        temp_sum -= body_pl;
-                        result_sum = result_sum + viplata;
+                        let procent_body = prepareNumb(r * parseFloat(temp_sum));
+                        let viplata = prepareNumb(parseFloat(body_pl) + parseFloat(procent_body));
+                        temp_sum = prepareNumb(parseFloat(temp_sum) - parseFloat(body_pl));
+                        result_sum = prepareNumb(parseFloat(result_sum) + parseFloat(viplata));
                         addRowResult(i+1, viplata, procent_body, body_pl, temp_sum );
                     }
-                    addRowResult('Всего:',result_sum,'','','');
+                    addRowResult('Всего:',result_sum,'','Переплата',prepareNumb(parseFloat(result_sum)-parseFloat(all_summ)));
                 }
 
             }
+
+            function calculateVlozhenie(){
+
+            }
+
             function addRowResult(a, b, c, d, e){
                 var block = document.getElementById('result');
                 var elem = document.createElement('div');
@@ -192,6 +256,10 @@
                 elem.className = 'row';
                 elem.innerText = error;
                 block.appendChild(elem);
+            }
+
+            function prepareNumb(n){
+                return parseFloat(n).toFixed(2)
             }
 
             function clearError() {
